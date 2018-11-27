@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>文件管理</title>
+    <link rel="stylesheet" th:href="@{/layui/css/layui.css}">
+    <script type="text/javascript" th:src="@{/jquery/jquery-3.3.1.js}"></script>
+    <script type="text/javascript" th:src="@{/layui/layui.js}"></script>
+</head>
+<body>
+<br>
+<div class="layui-tab layui-tab-brief" lay-filter="fileDiv">
+    <ul class="layui-tab-title">
+        <li class="layui-this">文件上传</li>
+        <li>文件列表</li>
+    </ul>
+    <div class="layui-tab-content">
+        <div class="layui-tab-item layui-show">
+            <div class="layui-card">
+                <div class="layui-card-header" style="color: #ff8b91">请选择一个或多个文件，并点击“开始上传”按钮进行文件上传</div>
+                <div class="layui-card-body">
+                    <div class="layui-upload">
+                        <button type="button" class="layui-btn layui-btn-normal" id="file-upload-list">请选择文件</button>
+                        <input class="layui-upload-file" type="file" accept="file" name="file" multiple="">
+                        <div class="layui-upload-list">
+                            <table class="layui-table">
+                                <thead>
+                                <tr>
+                                    <th>序号</th>
+                                    <th>文件名</th>
+                                    <th>大小</th>
+                                    <th>状态</th>
+                                    <th>操作</th>
+                                </tr>
+                                </thead>
+                                <tbody id="file-info-list"></tbody>
+                            </table>
+                        </div>
+                        <button type="button" class="layui-btn" id="upload-button">开始上传</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="layui-tab-item">
+            <div class="layui-card">
+                <div class="layui-card-header" style="color: #ff8b91">查询及管理文件信息</div>
+                <table class="layui-table">
+                    <colgroup>
+                        <col width="5%">
+                        <col width="15%">
+                        <col width="10%">
+                        <col width="15%">
+                        <col width="5%">
+                        <col width="15%">
+                        <col width="20%">
+                        <col width="20%">
+                        <col width="5%">
+                    </colgroup>
+                    <thead>
+                    <tr>
+                        <th>序号</th>
+                        <th>文件名</th>
+                        <th>大小</th>
+                        <th>扩展名</th>
+                        <th>状态</th>
+                        <th>上传时间</th>
+                        <th>虚拟路径</th>
+                        <th>真实路径</th>
+                        <th>操作</th>
+                    </tr>
+                    </thead>
+                    <tbody id="fileInfoList"></tbody>
+                </table>
+                <!--分页控件-->
+                <div id="pager"></div>
+            </div>
+        </div>
+    </div>
+</div>
+<!--获取项目名称 /file/-->
+<input type="hidden" name="ctx" th:href="@{/}">
+</body>
+<script th:inline="javascript">
+    //获取项目名称 /file/
+    var ctx = $('input[name=ctx]').attr("href");
+    //layui弹出层控件初始化
+    var layer = layui.layer;
+
+    //选项卡切换监听事件
+    layui.use('element', function () {
+        var element = layui.element;
+        element.on('tab(fileDiv)', function (data) {
+            //加载文件列表数据
+            if (data.index == 1) {
+                getFileListData();
+            }
+        });
+    });
+
+    //上传时loading...
+    var loadIndex;
+    var files;
+    //初始文件化序号
+    var order = 0;
+    //初始化上传控件
+    layui.use('upload', function () {
+        var upload = layui.upload;
+        //多文件列表示例
+        var fileInfoList = $('#file-info-list');
+        var uploadListIns = upload.render({
+            elem: '#file-upload-list',
+            url: ctx + 'uploadFile',
+            accept: 'file',
+            multiple: true,
+            auto: false,
+            bindAction: '#upload-button',
+            before: function () {
+                if (files != null) {
+                    //判断对象中是否有内容
+                    if (JSON.stringify(files) != '{}') {
+                        loadIndex = layer.load(2);
+                    }
+                }
+            },
+            choose: function (obj) {
+                //将每次选择的文件追加到文件队列
+                files = this.files = obj.pushFile();
+                //读取本地文件
+                obj.preview(function (index, file) {
+                    var tr = $(['<tr id="upload-' + index + '">',
+                        '<td>' + (order += 1) + '</td>',
+                        '<td>' + file.name + '</td>',
+                        '<td>' + (file.size / 1014).toFixed(1) + 'kb</td>',
+                        '<td>等待上传</td>',
+                        '<td>',
+                        '<button class="layui-btn layui-btn-mini test-upload-demo-reload layui-hide">重传</button>',
+                        '<button class="layui-btn layui-btn-mini layui-btn-danger test-upload-demo-delete">删除</button>',
+                        '</td>',
+                        '</tr>'].join(''));
+
+                    //单个重传
+                    tr.find('.test-upload-demo-reload').on('click', function () {
+                        obj.upload(index, file);
+                    });
+
+                    //删除
+                    tr.find('.test-upload-demo-delete').on('click', function () {
+                        //删除对应的文件
+                        delete files[index];
+                        //获取当前被删除的文件序号
+                        order = tr.find('td').eq(0).text() - 1;
+                        //获取当前被删除的tr一下的所有兄弟tr
+                        var nextTrs = tr.nextAll();
+                        //删除文件后重新排序
+                        nextTrs.each(function () {
+                            $(this).find('td').eq(0).text(order += 1);
+                        });
+                        tr.remove();
+                        //清空 input file 值，以免删除后出现同名文件不可选
+                        uploadListIns.config.elem.next()[0].value = '';
+                    });
+                    fileInfoList.append(tr);
+                });
+            },
+            done: function (res, index) {
+                //上传成功
+                if (res.status == 0) {
+                    var tr = fileInfoList.find('tr#upload-' + index), tds = tr.children();
+                    tds.eq(3).html('<span style="color: #5FB878;">上传成功</span>');
+                    //清空操作
+                    tds.eq(4).html(res.data);
+                    //关闭loading...
+                    layer.close(loadIndex);
+                    //删除文件队列已经上传成功的文件
+                    return delete this.files[index];
+                }
+                this.error(index, res);
+            },
+            error: function (index, res) {
+                var tr = fileInfoList.find('tr#upload-' + index), tds = tr.children();
+                //status==3, 文件信息保存失败, 异常处理
+                if (res.status == 3) {
+                    tds.eq(3).html('<span style="color: #FF5722;">' + res.msg + '</span>');
+                } else {
+                    tds.eq(3).html('<span style="color: #FF5722;">上传失败</span>');
+                }
+                //显示重传
+                tds.eq(4).find('.test-upload-demo-reload').removeClass('layui-hide');
+                //关闭loading...
+                layer.close(loadIndex);
+            }
+        });
+    });
+
+    //加载文件列表数据
+    function getFileListData() {
+        //查询及分页参数
+        var param = new Object();
+        //初始化分页参数, 当前页码
+        param.curr = 1;
+        //初始化分页参数, 每页条数
+        param.limit = 5;
+
+        param.fileNameExt = "asdfasfasdfafsd.exe";
+        //分页数据总条数
+        var total = 0;
+        //ajax获取数据总条数
+        $.ajax({
+            type: "POST",
+            async: false,
+            contentType: "application/json;charset=utf-8",
+            url: ctx + "getTotal",
+            dataType: "JSON",
+            data: JSON.stringify(param),
+            success: function (result) {
+                //查询成功
+                if (result.status == 0) {
+                    total = result.data;
+                }
+            },
+            error: function () {
+                layer.alert("获取分页总条数失败, 请稍后再试", {icon: 2});
+            }
+        });
+
+        //初始化分页控件
+        layui.use('laypage', function () {
+            var laypage = layui.laypage;
+            laypage.render({
+                elem: 'pager',
+                count: total,
+                first: '首页',
+                last: '尾页',
+                layout: ['prev', 'page', 'next', 'limit', 'refresh', 'skip', 'count'],
+                jump: function (obj, first) {
+                    //首次不执行
+                    param.curr = obj.curr;
+                    param.limit = obj.limit;
+                    //获取分页数据
+                    $.ajax({
+                        type: "POST",
+                        async: true,
+                        contentType: "application/json;charset=utf-8",
+                        url: ctx + "getFileInfo",
+                        dataType: "JSON",
+                        data: JSON.stringify(param),
+                        success: function (result) {
+                            $('#fileInfoList').html('');
+                            if (result.status == 0) {
+                                var data = result.data;
+                                if (data.length != 0) {
+                                    var tr;
+                                    for (var i = 0; i < data.length; i++) {
+                                        tr = $(['<tr>',
+                                            '<td>' + (i + 1) + '</td>',
+                                            '<td>' + data[i].fileName + '</td>',
+                                            '<td>' + data[i].fileSize + '</td>',
+                                            '<td>' + data[i].extName + '</td>',
+                                            '<td>' + (data[i].status == 1 ? '有效' : '无效') + '</td>',
+                                            '<td>' + data[i].uploadTime + '</td>',
+                                            '<td>' + data[i].fileUrl + '</td>',
+                                            '<td>' + data[i].fileRealUrl + '</td>',
+                                            '<td><button class="layui-btn layui-btn-sm layui-btn-danger test-upload-demo-delete">删除</button></td>',
+                                            '</tr>'
+                                        ].join(''));
+                                        $('#fileInfoList').append(tr);
+                                    }
+                                }
+                            }
+                        },
+                        error: function () {
+                            layer.alert("系统异常，请稍后再试", {icon: 2});
+                        }
+                    });
+                }
+            });
+        });
+    }
+
+    //获取当前项目路径
+    function getPath() {
+        //获取当前网址，如： http://localhost:80/file/index.jsp
+        var curPath = window.document.location.href;
+        //获取主机地址之后的目录，如： file/index.jsp
+        var pathName = window.document.location.pathname;
+        var pos = curPath.indexOf(pathName);
+        //获取主机地址，如： http://localhost:80
+        var localhostPath = curPath.substring(0, pos);
+        //获取带"/"的项目名，如：/file
+        var projectName = pathName.substring(0, pathName.substr(1).indexOf('/') + 1);
+        return localhostPath + projectName;
+    }
+</script>
+</html>

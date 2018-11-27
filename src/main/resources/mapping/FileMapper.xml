@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.file.mapper.FileMapper">
+    <resultMap id="BaseResultMap" type="com.file.model.FileInfo">
+        <id column="id" property="id" jdbcType="VARCHAR"/>
+        <result column="file_name" property="fileName" jdbcType="VARCHAR"/>
+        <result column="file_size" property="fileSize" jdbcType="VARCHAR"/>
+        <result column="ext_name" property="extName" jdbcType="VARCHAR"/>
+        <result column="file_url" property="fileUrl" jdbcType="VARCHAR"/>
+        <result column="file_real_url" property="fileRealUrl" jdbcType="VARCHAR"/>
+        <result column="status" property="status" jdbcType="INTEGER"/>
+        <result column="upload_time" property="uploadTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        id, file_name, file_size, ext_name, file_url, file_real_url, status, upload_time
+    </sql>
+    <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.String">
+        select
+        <include refid="Base_Column_List"/>
+        from t_file_info
+        where id = #{id,jdbcType=VARCHAR}
+    </select>
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.String">
+        delete from t_file_info
+        where id = #{id,jdbcType=VARCHAR}
+    </delete>
+    <insert id="insert" parameterType="com.file.model.FileInfo">
+        insert into t_file_info (id, file_name, file_size,
+        ext_name, file_url, file_real_url,
+        status, upload_time)
+        values (#{id,jdbcType=VARCHAR}, #{fileName,jdbcType=VARCHAR}, #{fileSize,jdbcType=VARCHAR},
+        #{extName,jdbcType=VARCHAR}, #{fileUrl,jdbcType=VARCHAR}, #{fileRealUrl,jdbcType=VARCHAR},
+        #{status,jdbcType=INTEGER}, #{uploadTime,jdbcType=TIMESTAMP})
+    </insert>
+    <insert id="insertSelective" parameterType="com.file.model.FileInfo">
+        insert into t_file_info
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="id != null">
+                id,
+            </if>
+            <if test="fileName != null">
+                file_name,
+            </if>
+            <if test="fileSize != null">
+                file_size,
+            </if>
+            <if test="extName != null">
+                ext_name,
+            </if>
+            <if test="fileUrl != null">
+                file_url,
+            </if>
+            <if test="fileRealUrl != null">
+                file_real_url,
+            </if>
+            <if test="status != null">
+                status,
+            </if>
+            <if test="uploadTime != null">
+                upload_time,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="id != null">
+                #{id,jdbcType=VARCHAR},
+            </if>
+            <if test="fileName != null">
+                #{fileName,jdbcType=VARCHAR},
+            </if>
+            <if test="fileSize != null">
+                #{fileSize,jdbcType=VARCHAR},
+            </if>
+            <if test="extName != null">
+                #{extName,jdbcType=VARCHAR},
+            </if>
+            <if test="fileUrl != null">
+                #{fileUrl,jdbcType=VARCHAR},
+            </if>
+            <if test="fileRealUrl != null">
+                #{fileRealUrl,jdbcType=VARCHAR},
+            </if>
+            <if test="status != null">
+                #{status,jdbcType=INTEGER},
+            </if>
+            <if test="uploadTime != null">
+                #{uploadTime,jdbcType=TIMESTAMP},
+            </if>
+        </trim>
+    </insert>
+    <update id="updateByPrimaryKeySelective" parameterType="com.file.model.FileInfo">
+        update t_file_info
+        <set>
+            <if test="fileName != null">
+                file_name = #{fileName,jdbcType=VARCHAR},
+            </if>
+            <if test="fileSize != null">
+                file_size = #{fileSize,jdbcType=VARCHAR},
+            </if>
+            <if test="extName != null">
+                ext_name = #{extName,jdbcType=VARCHAR},
+            </if>
+            <if test="fileUrl != null">
+                file_url = #{fileUrl,jdbcType=VARCHAR},
+            </if>
+            <if test="fileRealUrl != null">
+                file_real_url = #{fileRealUrl,jdbcType=VARCHAR},
+            </if>
+            <if test="status != null">
+                status = #{status,jdbcType=INTEGER},
+            </if>
+            <if test="uploadTime != null">
+                upload_time = #{uploadTime,jdbcType=TIMESTAMP},
+            </if>
+        </set>
+        where id = #{id,jdbcType=VARCHAR}
+    </update>
+    <update id="updateByPrimaryKey" parameterType="com.file.model.FileInfo">
+        update t_file_info
+        set file_name = #{fileName,jdbcType=VARCHAR},
+        file_size = #{fileSize,jdbcType=VARCHAR},
+        ext_name = #{extName,jdbcType=VARCHAR},
+        file_url = #{fileUrl,jdbcType=VARCHAR},
+        file_real_url = #{fileRealUrl,jdbcType=VARCHAR},
+        status = #{status,jdbcType=INTEGER},
+        upload_time = #{uploadTime,jdbcType=TIMESTAMP}
+        where id = #{id,jdbcType=VARCHAR}
+    </update>
+
+    <!--获取数据总条数-->
+    <select id="getTotal" parameterType="com.file.model.FileInfo" resultType="java.lang.Integer">
+        select count(1) from t_file_info
+    </select>
+
+    <!--获取文件信息分页数据-->
+    <select id="getList" parameterType="com.file.model.FileInfo" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from t_file_info
+        order by upload_time desc, file_name asc
+    </select>
+</mapper>
